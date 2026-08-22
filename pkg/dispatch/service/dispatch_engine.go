@@ -193,8 +193,8 @@ func segmentContent(content string, cfg model.BotConfig) []string {
 	}
 
 	limit := cfg.TextSegmentationLimit
-	words := strings.Fields(content)
-	if len(words) == 0 {
+	tokens := regexp.MustCompile(`\S+|\s+`).FindAllString(content, -1)
+	if len(tokens) == 0 {
 		return []string{content} // preserve empty or whitespace-only content
 	}
 
@@ -202,24 +202,23 @@ func segmentContent(content string, cfg model.BotConfig) []string {
 	var rawParts []string
 	var current strings.Builder
 	currentRunes := 0
-	for _, word := range words {
-		wordRunes := utf8.RuneCountInString(word)
+	for _, token := range tokens {
+		tokenRunes := utf8.RuneCountInString(token)
 		if currentRunes == 0 {
-			current.WriteString(word)
-			currentRunes = wordRunes
-		} else if currentRunes+1+wordRunes <= limit {
-			current.WriteByte(' ')
-			current.WriteString(word)
-			currentRunes += 1 + wordRunes
+			current.WriteString(token)
+			currentRunes = tokenRunes
+		} else if currentRunes+tokenRunes <= limit {
+			current.WriteString(token)
+			currentRunes += tokenRunes
 		} else {
-			rawParts = append(rawParts, current.String())
+			rawParts = append(rawParts, strings.TrimSpace(current.String()))
 			current.Reset()
-			current.WriteString(word)
-			currentRunes = wordRunes
+			current.WriteString(token)
+			currentRunes = tokenRunes
 		}
 	}
 	if currentRunes > 0 {
-		rawParts = append(rawParts, current.String())
+		rawParts = append(rawParts, strings.TrimSpace(current.String()))
 	}
 
 	// Merge parts shorter than TextSegmentationMinSize into previous part,
