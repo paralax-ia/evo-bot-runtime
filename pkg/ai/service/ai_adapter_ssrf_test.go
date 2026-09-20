@@ -55,7 +55,7 @@ func TestCall_ForeignHostAttachment_IsNotFetched(t *testing.T) {
 	proc := capturingProc(&parts)
 	defer proc.Close()
 
-	adapter := aiService.NewAIAdapter(30, 0, 1)
+	adapter := aiService.NewAIAdapter(30, 0, 1, false)
 	if _, err := adapter.Call(context.Background(), &aiModel.A2ARequest{
 		OutgoingURL: proc.URL, ContactID: 1, ConversationID: 2, Message: "hi",
 		Attachments: []aiModel.Attachment{{URL: internal.URL + "/latest/meta-data/", ContentType: "image/png"}},
@@ -87,7 +87,7 @@ func TestCall_AllowlistedHost_IsFetched(t *testing.T) {
 	defer proc.Close()
 
 	t.Setenv("MEDIA_HOST_ALLOWLIST", "127.0.0.1")
-	adapter := aiService.NewAIAdapter(30, 0, 1)
+	adapter := aiService.NewAIAdapter(30, 0, 1, false)
 	if _, err := adapter.Call(context.Background(), &aiModel.A2ARequest{
 		OutgoingURL: proc.URL, ContactID: 1, ConversationID: 2, Message: "hi",
 		Attachments: []aiModel.Attachment{{URL: blob.URL + "/photo.png", ContentType: "image/png"}},
@@ -128,7 +128,7 @@ func TestCall_RedirectOffTheAuthorizedHost_IsRefused(t *testing.T) {
 	proc := capturingProc(&parts)
 	defer proc.Close()
 
-	adapter := aiService.NewAIAdapter(30, 0, 1)
+	adapter := aiService.NewAIAdapter(30, 0, 1, false)
 	if _, err := adapter.Call(context.Background(), &aiModel.A2ARequest{
 		OutgoingURL: proc.URL, ContactID: 1, ConversationID: 2, Message: "hi",
 		Attachments: []aiModel.Attachment{{URL: redirector.URL + "/photo.png", ContentType: "image/png"}},
@@ -151,7 +151,7 @@ func TestCall_NonHTTPScheme_IsRejected(t *testing.T) {
 	proc := capturingProc(&parts)
 	defer proc.Close()
 
-	adapter := aiService.NewAIAdapter(30, 0, 1)
+	adapter := aiService.NewAIAdapter(30, 0, 1, false)
 	if _, err := adapter.Call(context.Background(), &aiModel.A2ARequest{
 		OutgoingURL: proc.URL, ContactID: 1, ConversationID: 2, Message: "hi",
 		Attachments: []aiModel.Attachment{{URL: "file:///etc/passwd", ContentType: "image/png"}},
@@ -177,7 +177,7 @@ func TestCall_NoAuthorizedHost_ForwardsNothing(t *testing.T) {
 	proc := capturingProc(&parts)
 	defer proc.Close()
 
-	adapter := aiService.NewAIAdapter(30, 0, 1)
+	adapter := aiService.NewAIAdapter(30, 0, 1, false)
 	if _, err := adapter.Call(context.Background(), &aiModel.A2ARequest{
 		OutgoingURL: proc.URL, ContactID: 1, ConversationID: 2, Message: "hi",
 		Attachments: []aiModel.Attachment{{URL: blob.URL + "/photo.png", ContentType: "image/png"}},

@@ -16,6 +16,7 @@ type Config struct {
 	// without a reply. AICallMaxRetries is retries AFTER the first attempt.
 	AICallMaxRetries  int
 	AICallRetryBaseMs int
+	AIIgnoreThoughts  bool
 }
 
 func Load() (*Config, error) {
@@ -47,6 +48,10 @@ func Load() (*Config, error) {
 	if err != nil {
 		return nil, err
 	}
+	aiIgnoreThoughts, err := getEnvBoolOrDefault("AI_IGNORE_THOUGHTS", false)
+	if err != nil {
+		return nil, err
+	}
 
 	return &Config{
 		ListenAddr:           listenAddr,
@@ -55,6 +60,7 @@ func Load() (*Config, error) {
 		AICallTimeoutSeconds: aiCallTimeout,
 		AICallMaxRetries:     aiCallMaxRetries,
 		AICallRetryBaseMs:    aiCallRetryBaseMs,
+		AIIgnoreThoughts:     aiIgnoreThoughts,
 	}, nil
 }
 
@@ -76,4 +82,16 @@ func getEnvIntOrDefault(key string, defaultVal int) (int, error) {
 		return 0, fmt.Errorf("invalid integer for environment variable %s: %q", key, v)
 	}
 	return n, nil
+}
+
+func getEnvBoolOrDefault(key string, defaultVal bool) (bool, error) {
+	v := os.Getenv(key)
+	if v == "" {
+		return defaultVal, nil
+	}
+	b, err := strconv.ParseBool(v)
+	if err != nil {
+		return false, fmt.Errorf("invalid boolean for environment variable %s: %q", key, v)
+	}
+	return b, nil
 }

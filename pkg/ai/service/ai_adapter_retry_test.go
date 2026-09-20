@@ -50,7 +50,7 @@ func TestCall_RetriesOn503ThenSucceeds(t *testing.T) {
 	}))
 	defer server.Close()
 
-	adapter := aiService.NewAIAdapter(30, 2, 1) // 2 retries, 1ms base
+	adapter := aiService.NewAIAdapter(30, 2, 1, false) // 2 retries, 1ms base
 	resp, err := adapter.Call(context.Background(), retryReq(server.URL))
 	if err != nil {
 		t.Fatalf("expected success after retry, got error: %v", err)
@@ -71,7 +71,7 @@ func TestCall_ExhaustsRetriesOnPersistent500(t *testing.T) {
 	}))
 	defer server.Close()
 
-	adapter := aiService.NewAIAdapter(30, 2, 1)
+	adapter := aiService.NewAIAdapter(30, 2, 1, false)
 	if _, err := adapter.Call(context.Background(), retryReq(server.URL)); err == nil {
 		t.Fatal("expected error after exhausting retries, got nil")
 	}
@@ -88,7 +88,7 @@ func TestCall_DoesNotRetryOn400(t *testing.T) {
 	}))
 	defer server.Close()
 
-	adapter := aiService.NewAIAdapter(30, 3, 1)
+	adapter := aiService.NewAIAdapter(30, 3, 1, false)
 	if _, err := adapter.Call(context.Background(), retryReq(server.URL)); err == nil {
 		t.Fatal("expected error for 400, got nil")
 	}
@@ -107,7 +107,7 @@ func TestCall_RetriesOnNetworkErrorThenSucceeds(t *testing.T) {
 	}))
 	defer server.Close()
 
-	adapter := aiService.NewAIAdapter(30, 2, 1)
+	adapter := aiService.NewAIAdapter(30, 2, 1, false)
 	resp, err := adapter.Call(context.Background(), retryReq(server.URL))
 	if err != nil {
 		t.Fatalf("expected success after network retry, got error: %v", err)
@@ -128,7 +128,7 @@ func TestCall_NoRetryWhenMaxRetriesZero(t *testing.T) {
 	}))
 	defer server.Close()
 
-	adapter := aiService.NewAIAdapter(30, 0, 1) // retries disabled -> single attempt
+	adapter := aiService.NewAIAdapter(30, 0, 1, false) // retries disabled -> single attempt
 	if _, err := adapter.Call(context.Background(), retryReq(server.URL)); err == nil {
 		t.Fatal("expected error, got nil")
 	}
@@ -149,7 +149,7 @@ func TestCall_TimeoutIsNotRetried(t *testing.T) {
 	}))
 	defer server.Close()
 
-	adapter := aiService.NewAIAdapter(1, 3, 1) // 1s per-attempt timeout, retries enabled
+	adapter := aiService.NewAIAdapter(1, 3, 1, false) // 1s per-attempt timeout, retries enabled
 	_, err := adapter.Call(context.Background(), retryReq(server.URL))
 	if !errors.Is(err, brtErrors.ErrAITimeout) {
 		t.Fatalf("expected ErrAITimeout, got %v", err)

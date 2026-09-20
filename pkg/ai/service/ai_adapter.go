@@ -71,6 +71,7 @@ type aiAdapter struct {
 	maxRetries     int
 	retryBaseDelay time.Duration
 	client         *http.Client
+	ignoreThoughts bool
 }
 
 // NewAIAdapter constructs the adapter. Returns interface (GEAR R03).
@@ -81,7 +82,7 @@ type aiAdapter struct {
 // backoff + jitter, so a momentary processor blip does not drop the customer's
 // reply. Permanent failures (4xx), timeouts and pipeline cancellation are not
 // retried. retryBaseMs is the base backoff in milliseconds.
-func NewAIAdapter(timeoutSecs, maxRetries, retryBaseMs int) AIAdapter {
+func NewAIAdapter(timeoutSecs, maxRetries, retryBaseMs int, ignoreThoughts bool) AIAdapter {
 	if maxRetries < 0 {
 		maxRetries = 0
 	}
@@ -93,6 +94,7 @@ func NewAIAdapter(timeoutSecs, maxRetries, retryBaseMs int) AIAdapter {
 		maxRetries:     maxRetries,
 		retryBaseDelay: time.Duration(retryBaseMs) * time.Millisecond,
 		client:         &http.Client{},
+		ignoreThoughts: ignoreThoughts,
 	}
 }
 
@@ -254,7 +256,7 @@ func (a *aiAdapter) doOnce(
 		return nil, false, fmt.Errorf("pipeline.ai.decode: %w", err)
 	}
 
-	content := extractResponseText(&a2aResp)
+	content := extractResponseText(&a2aResp, a.ignoreThoughts)
 
 	slog.Info("pipeline.ai.http.completed",
 		"contact_id", req.ContactID,
@@ -295,7 +297,7 @@ func (a *aiAdapter) backoffDelay(attempt int) time.Duration {
 
 // extractResponseText extracts the text content from the A2A JSON-RPC response.
 // Tries result.artifacts[0].parts[0].text first, then result.message.parts[0].text.
-func extractResponseText(resp *model.A2AResponse) string {
+func extractResponseText(resp *model.A2AResponse, ignoreThoughts bool) string {
 	if resp.Result == nil {
 		return ""
 	}
@@ -303,7 +305,7 @@ func extractResponseText(resp *model.A2AResponse) string {
 	if len(resp.Result.Artifacts) > 0 {
 		for _, artifact := range resp.Result.Artifacts {
 			for _, part := range artifact.Parts {
-				if part.Text != "" {
+				if part.Text != "" && (!ignoreThoughts || part.Type == "text") {
 					return part.Text
 				}
 			}
@@ -312,7 +314,7 @@ func extractResponseText(resp *model.A2AResponse) string {
 	// Fallback to message format
 	if resp.Result.Message != nil {
 		for _, part := range resp.Result.Message.Parts {
-			if part.Text != "" {
+			if part.Text != "" && (!ignoreThoughts || part.Type == "text") {
 				return part.Text
 			}
 		}
