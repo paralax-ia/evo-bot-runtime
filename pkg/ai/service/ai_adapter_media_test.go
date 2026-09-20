@@ -52,7 +52,7 @@ func TestCall_ForwardsAttachmentAsFilePart(t *testing.T) {
 	proc := procServer(t, &parts)
 	defer proc.Close()
 
-	adapter := aiService.NewAIAdapter(30, 0, 1)
+	adapter := aiService.NewAIAdapter(30, 0, 1, false)
 	_, err := adapter.Call(context.Background(), &aiModel.A2ARequest{
 		OutgoingURL:    proc.URL + "/api/v1/a2a/agent-1",
 		ContactID:      1,
@@ -97,7 +97,7 @@ func TestCall_AttachmentDownloadFailure_SendsTextOnly(t *testing.T) {
 	proc := procServer(t, &parts)
 	defer proc.Close()
 
-	adapter := aiService.NewAIAdapter(30, 0, 1)
+	adapter := aiService.NewAIAdapter(30, 0, 1, false)
 	_, err := adapter.Call(context.Background(), &aiModel.A2ARequest{
 		OutgoingURL:    proc.URL + "/api/v1/a2a/agent-1",
 		ContactID:      1,
@@ -160,7 +160,7 @@ func TestCall_TotalAttachmentBudget_DropsExcessAndStillSends(t *testing.T) {
 		})
 	}
 
-	adapter := aiService.NewAIAdapter(30, 0, 1)
+	adapter := aiService.NewAIAdapter(30, 0, 1, false)
 	if _, err := adapter.Call(context.Background(), &aiModel.A2ARequest{
 		OutgoingURL: proc.URL, ContactID: 1, ConversationID: 2, Message: "album", Attachments: atts,
 	}); err != nil {
@@ -196,7 +196,7 @@ func TestCall_AttachmentTimeBudget_IsBounded(t *testing.T) {
 
 	// timeoutSecs=1 → 1s per download, 3s for the set. Serial per-attachment
 	// timeouts would take 8s.
-	adapter := aiService.NewAIAdapter(1, 0, 1)
+	adapter := aiService.NewAIAdapter(1, 0, 1, false)
 	start := time.Now()
 	if _, err := adapter.Call(context.Background(), &aiModel.A2ARequest{
 		OutgoingURL: proc.URL, ContactID: 1, ConversationID: 2, Message: "hi", Attachments: atts,
@@ -224,7 +224,7 @@ func TestCall_HTMLResponse_IsNotForwardedAsMedia(t *testing.T) {
 	proc := procServer(t, &parts)
 	defer proc.Close()
 
-	adapter := aiService.NewAIAdapter(30, 0, 1)
+	adapter := aiService.NewAIAdapter(30, 0, 1, false)
 	if _, err := adapter.Call(context.Background(), &aiModel.A2ARequest{
 		OutgoingURL: proc.URL, ContactID: 1, ConversationID: 2, Message: "hi",
 		Attachments: []aiModel.Attachment{{URL: htmlSrv.URL + "/photo.jpg", ContentType: "image/jpeg", FileType: "image"}},
@@ -264,7 +264,7 @@ func TestCall_MimeTypeResolution(t *testing.T) {
 			proc := procServer(t, &parts)
 			defer proc.Close()
 
-			adapter := aiService.NewAIAdapter(30, 0, 1)
+			adapter := aiService.NewAIAdapter(30, 0, 1, false)
 			if _, err := adapter.Call(context.Background(), &aiModel.A2ARequest{
 				OutgoingURL: proc.URL, ContactID: 1, ConversationID: 2, Message: "hi",
 				Attachments: []aiModel.Attachment{{URL: srv.URL + tc.urlPath, ContentType: tc.declared, FileType: "image"}},
@@ -299,7 +299,7 @@ func TestCall_OversizeAttachment_SendsTextOnly(t *testing.T) {
 	proc := procServer(t, &parts)
 	defer proc.Close()
 
-	adapter := aiService.NewAIAdapter(30, 0, 1)
+	adapter := aiService.NewAIAdapter(30, 0, 1, false)
 	if _, err := adapter.Call(context.Background(), &aiModel.A2ARequest{
 		OutgoingURL: proc.URL, ContactID: 1, ConversationID: 2, Message: "hi",
 		Attachments: []aiModel.Attachment{{URL: srv.URL + "/big.png", ContentType: "image/png", FileType: "image"}},
