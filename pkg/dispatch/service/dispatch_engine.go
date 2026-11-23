@@ -86,6 +86,20 @@ func (d *dispatchEngineImpl) Dispatch(
 		parts[0] = cfg.MessageSignature + parts[0]
 	}
 
+	hasContent := false
+	for _, part := range parts {
+		if part != "" {
+			hasContent = true
+			break
+		}
+	}
+	if !hasContent && len(atts) == 0 {
+		slog.Warn("pipeline.dispatch.empty_content",
+			"contact_id", contactID,
+			"conversation_id", conversationID,
+		)
+	}
+
 	start := time.Now()
 
 	for i, part := range parts {
@@ -177,6 +191,10 @@ func (d *dispatchEngineImpl) sendPart(ctx context.Context, postbackURL, content 
 	}
 	defer resp.Body.Close()
 	_, _ = io.Copy(io.Discard, resp.Body) // drain to allow connection reuse
+
+	if resp.StatusCode == http.StatusUnprocessableEntity {
+		return fmt.Errorf("%w: status: 422", brtErrors.ErrPostbackRejected)
+	}
 
 	if resp.StatusCode < 200 || resp.StatusCode >= 300 {
 		return fmt.Errorf("status: %d", resp.StatusCode)

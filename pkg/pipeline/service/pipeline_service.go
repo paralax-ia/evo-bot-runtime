@@ -500,6 +500,14 @@ func (s *pipelineService) runDispatchStage(
 				"contact_id", contactID,
 				"conversation_id", conversationID,
 			)
+		case errors.Is(err, brtErrors.ErrPostbackRejected):
+			// Postback rejected by CRM (e.g. status 422 - conversation not eligible or closed by human)
+			slog.Warn("pipeline.dispatch.postback_rejected",
+				"contact_id", contactID,
+				"conversation_id", conversationID,
+				"error", err,
+			)
+			s.clearStateWithLog(contactID, conversationID)
 		default:
 			slog.Error("pipeline.dispatch.error",
 				"contact_id", contactID,

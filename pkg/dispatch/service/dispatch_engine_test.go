@@ -187,6 +187,24 @@ func TestDispatch_NonOKResponse_ReturnsError(t *testing.T) {
 	}
 }
 
+func TestDispatch_Status422_ReturnsPostbackRejectedError(t *testing.T) {
+	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		w.WriteHeader(http.StatusUnprocessableEntity)
+	}))
+	defer server.Close()
+
+	eng := service.NewDispatchEngine("")
+	cfg := model.BotConfig{TextSegmentationEnabled: false}
+
+	err := eng.Dispatch(context.Background(), 9, 9, "message content", cfg, server.URL)
+	if err == nil {
+		t.Fatal("expected error for 422 response, got nil")
+	}
+	if !errors.Is(err, brtErrors.ErrPostbackRejected) {
+		t.Fatalf("expected errors.Is(err, ErrPostbackRejected), got: %v", err)
+	}
+}
+
 func TestSegmentContent_MergeDoesNotExceedLimit(t *testing.T) {
 	// "hello world"(11 runes) fits limit=11; "test"(4) < minSize=5 but merging
 	// would produce "hello world test"(16 runes) > limit=11 → must NOT merge.
